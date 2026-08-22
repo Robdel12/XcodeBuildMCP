@@ -1,4 +1,5 @@
 import type { CommandExecutor } from './execution/index.ts';
+import { getConfig } from './config-store.ts';
 
 /**
  * Headless launch policy.
@@ -64,8 +65,8 @@ export interface SimulatorFrontendCommand {
 }
 
 /**
- * Build launch candidates in preference order. Device Hub is the primary
- * frontend on Xcode 27 and can display simulators from legacy runtimes.
+ * Build launch candidates in preference order. The default `auto` preference
+ * tries Device Hub first, then falls back to Simulator.app.
  */
 export function buildOpenSimulatorFrontendCommands(opts?: {
   simulatorId?: string;
@@ -82,10 +83,16 @@ export function buildOpenSimulatorFrontendCommands(opts?: {
     : ['open', '-a', 'DeviceHub'];
   const simulatorCommand = buildOpenSimulatorAppCommand(opts);
 
-  return [
+  const candidates: SimulatorFrontendCommand[] = [
     { frontend: 'device-hub', command: deviceHubCommand },
     { frontend: 'simulator', command: simulatorCommand ?? ['open', '-a', 'Simulator'] },
   ];
+
+  const preference = getConfig().simulatorFrontend;
+  if (preference === 'auto') {
+    return candidates;
+  }
+  return candidates.filter((candidate) => candidate.frontend === preference);
 }
 
 export type OpenSimulatorFrontendResult =
@@ -93,8 +100,8 @@ export type OpenSimulatorFrontendResult =
   | { success: false; error: string };
 
 /**
- * Open Device Hub when available, falling back to Simulator.app for hosts that
- * do not have Device Hub installed.
+ * Open the configured simulator frontend. In `auto` mode, try Device Hub first
+ * and fall back to Simulator.app when Device Hub is unavailable.
  */
 export async function openSimulatorFrontend(
   executor: CommandExecutor,

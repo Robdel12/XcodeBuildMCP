@@ -11,6 +11,7 @@ incrementalBuildsEnabled: false
 debug: false
 sentryDisabled: false
 filePathRenderStyle: 'list' # text output file artifacts: list or tree
+simulatorFrontend: 'simulator' # simulator, device-hub, or auto
 sessionDefaults:
   projectPath: './MyApp.xcodeproj' # xor workspacePath
   workspacePath: './MyApp.xcworkspace' # xor projectPath

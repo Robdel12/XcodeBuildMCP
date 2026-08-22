@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { sessionDefaultsSchema } from './session-defaults-schema.ts';
+import { SIMULATOR_FRONTEND_PREFERENCES } from './runtime-config-types.ts';
 
 export const runtimeConfigFileSchema = z
   .object({
@@ -13,6 +14,7 @@ export const runtimeConfigFileSchema = z
     disableXcodeAutoSync: z.boolean().optional(),
     showTestTiming: z.boolean().optional(),
     filePathRenderStyle: z.enum(['tree', 'list']).optional(),
+    simulatorFrontend: z.enum(SIMULATOR_FRONTEND_PREFERENCES).optional(),
     uiDebuggerGuardMode: z.enum(['error', 'warn', 'off']).optional(),
     incrementalBuildsEnabled: z.boolean().optional(),
     dapRequestTimeoutMs: z.number().int().positive().optional(),

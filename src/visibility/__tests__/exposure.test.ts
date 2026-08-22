@@ -27,6 +27,7 @@ function createDefaultConfig(
     disableSessionDefaults: false,
     disableXcodeAutoSync: false,
     showTestTiming: false,
+    simulatorFrontend: 'auto',
     uiDebuggerGuardMode: 'error',
     incrementalBuildsEnabled: false,
     dapRequestTimeoutMs: 30000,

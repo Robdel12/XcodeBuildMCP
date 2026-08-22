@@ -37,6 +37,7 @@ describe('config-store', () => {
 
     const config = getConfig();
     expect(config.debug).toBe(false);
+    expect(config.simulatorFrontend).toBe('auto');
     expect(config.incrementalBuildsEnabled).toBe(false);
     expect(config.dapRequestTimeoutMs).toBe(30000);
     expect(config.dapLogEvents).toBe(false);
@@ -56,6 +57,7 @@ describe('config-store', () => {
       XCODEBUILDMCP_UI_DEBUGGER_GUARD_MODE: 'warn',
       XCODEBUILDMCP_DEBUGGER_BACKEND: 'lldb',
       XCODEBUILDMCP_FILE_PATH_RENDER_STYLE: 'list',
+      XCODEBUILDMCP_SIMULATOR_FRONTEND: '  SiMuLaToR ',
       XCODEBUILDMCP_AXE_SOURCE_PATH: '/Volumes/Developer/AXe',
     };
 
@@ -72,6 +74,7 @@ describe('config-store', () => {
     expect(config.uiDebuggerGuardMode).toBe('warn');
     expect(config.debuggerBackend).toBe('lldb-cli');
     expect(config.filePathRenderStyle).toBe('list');
+    expect(config.simulatorFrontend).toBe('simulator');
     expect(config.axeSourcePath).toBe('/Volumes/Developer/AXe');
   });
 
@@ -81,6 +84,7 @@ describe('config-store', () => {
       'debug: false',
       'dapRequestTimeoutMs: 4000',
       'filePathRenderStyle: tree',
+      'simulatorFrontend: device-hub',
       'axeSourcePath: /file/AXe',
       '',
     ].join('\n');
@@ -88,6 +92,7 @@ describe('config-store', () => {
       XCODEBUILDMCP_DEBUG: 'true',
       XCODEBUILDMCP_DAP_REQUEST_TIMEOUT_MS: '999',
       XCODEBUILDMCP_FILE_PATH_RENDER_STYLE: 'list',
+      XCODEBUILDMCP_SIMULATOR_FRONTEND: 'simulator',
       XCODEBUILDMCP_AXE_SOURCE_PATH: '/env/AXe',
     };
 
@@ -98,6 +103,7 @@ describe('config-store', () => {
         debug: true,
         dapRequestTimeoutMs: 12345,
         filePathRenderStyle: 'list',
+        simulatorFrontend: 'auto',
         axeSourcePath: '/override/AXe',
       },
       env,
@@ -107,6 +113,7 @@ describe('config-store', () => {
     expect(config.debug).toBe(true);
     expect(config.dapRequestTimeoutMs).toBe(12345);
     expect(config.filePathRenderStyle).toBe('list');
+    expect(config.simulatorFrontend).toBe('auto');
     expect(config.axeSourcePath).toBe('/override/AXe');
   });
 
@@ -114,18 +121,31 @@ describe('config-store', () => {
     const yaml = [
       'schemaVersion: 1',
       'filePathRenderStyle: tree',
+      'simulatorFrontend: device-hub',
       'axeSourcePath: /file/AXe',
       '',
     ].join('\n');
     const env = {
       XCODEBUILDMCP_FILE_PATH_RENDER_STYLE: 'list',
+      XCODEBUILDMCP_SIMULATOR_FRONTEND: 'simulator',
       XCODEBUILDMCP_AXE_SOURCE_PATH: '/env/AXe',
     };
 
     await initConfigStore({ cwd, fs: createFs(yaml), env });
 
     expect(getConfig().filePathRenderStyle).toBe('tree');
+    expect(getConfig().simulatorFrontend).toBe('device-hub');
     expect(getConfig().axeSourcePath).toBe('/file/AXe');
+  });
+
+  it('ignores unsupported simulator frontend env values', async () => {
+    await initConfigStore({
+      cwd,
+      fs: createFs(),
+      env: { XCODEBUILDMCP_SIMULATOR_FRONTEND: 'device-hub-plus' },
+    });
+
+    expect(getConfig().simulatorFrontend).toBe('auto');
   });
 
   it('reads sentryDisabled from config file', async () => {

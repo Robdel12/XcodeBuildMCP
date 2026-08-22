@@ -6,24 +6,55 @@ import {
   isHeadlessLaunchMode,
   openSimulatorFrontend,
 } from '../focus-policy.ts';
-import { createMockCommandResponse } from '../../test-utils/mock-executors.ts';
+import { __resetConfigStoreForTests, initConfigStore } from '../config-store.ts';
+import {
+  createMockCommandResponse,
+  createMockFileSystemExecutor,
+} from '../../test-utils/mock-executors.ts';
 
 const ENV_VAR = 'XCODEBUILDMCP_HEADLESS_LAUNCH';
+const FRONTEND_ENV_VAR = 'XCODEBUILDMCP_SIMULATOR_FRONTEND';
+const CONFIG_PATH = '/repo/.xcodebuildmcp/config.yaml';
 
 describe('focus-policy', () => {
-  let previous: string | undefined;
+  let previousHeadless: string | undefined;
+  let previousFrontend: string | undefined;
+
+  async function initFrontendConfig(frontend: 'device-hub' | 'simulator'): Promise<void> {
+    await initConfigStore({
+      cwd: '/repo',
+      fs: createMockFileSystemExecutor({
+        existsSync: (targetPath) => targetPath === CONFIG_PATH,
+        readFile: async (targetPath) => {
+          if (targetPath !== CONFIG_PATH) {
+            throw new Error(`Unexpected readFile path: ${targetPath}`);
+          }
+          return `schemaVersion: 1\nsimulatorFrontend: ${frontend}\n`;
+        },
+      }),
+    });
+  }
 
   beforeEach(() => {
-    previous = process.env[ENV_VAR];
+    previousHeadless = process.env[ENV_VAR];
+    previousFrontend = process.env[FRONTEND_ENV_VAR];
     delete process.env[ENV_VAR];
+    delete process.env[FRONTEND_ENV_VAR];
+    __resetConfigStoreForTests();
   });
 
   afterEach(() => {
-    if (previous === undefined) {
+    if (previousHeadless === undefined) {
       delete process.env[ENV_VAR];
     } else {
-      process.env[ENV_VAR] = previous;
+      process.env[ENV_VAR] = previousHeadless;
     }
+    if (previousFrontend === undefined) {
+      delete process.env[FRONTEND_ENV_VAR];
+    } else {
+      process.env[FRONTEND_ENV_VAR] = previousFrontend;
+    }
+    __resetConfigStoreForTests();
   });
 
   describe('isHeadlessLaunchMode', () => {
@@ -107,7 +138,7 @@ describe('focus-policy', () => {
   });
 
   describe('buildOpenSimulatorFrontendCommands', () => {
-    it('prefers Device Hub and falls back to Simulator.app', () => {
+    it('uses Device Hub first and Simulator.app as the auto fallback', () => {
       expect(buildOpenSimulatorFrontendCommands()).toEqual([
         { frontend: 'device-hub', command: ['open', '-a', 'DeviceHub'] },
         { frontend: 'simulator', command: ['open', '-a', 'Simulator'] },
@@ -123,6 +154,28 @@ describe('focus-policy', () => {
         {
           frontend: 'simulator',
           command: ['open', '-a', 'Simulator', '--args', '-CurrentDeviceUDID', 'SIM 123'],
+        },
+      ]);
+    });
+
+    it('selects only Simulator.app when configured', async () => {
+      await initFrontendConfig('simulator');
+
+      expect(buildOpenSimulatorFrontendCommands({ simulatorId: 'SIM 123' })).toEqual([
+        {
+          frontend: 'simulator',
+          command: ['open', '-a', 'Simulator', '--args', '-CurrentDeviceUDID', 'SIM 123'],
+        },
+      ]);
+    });
+
+    it('selects only Device Hub when configured', async () => {
+      await initFrontendConfig('device-hub');
+
+      expect(buildOpenSimulatorFrontendCommands({ simulatorId: 'SIM 123' })).toEqual([
+        {
+          frontend: 'device-hub',
+          command: ['open', 'devices:///manage/select?id=SIM%20123'],
         },
       ]);
     });
@@ -162,9 +215,36 @@ describe('focus-policy', () => {
       ]);
     });
 
+    it.each([
+      {
+        frontend: 'simulator' as const,
+        command: ['open', '-a', 'Simulator', '--args', '-CurrentDeviceUDID', 'SIM 123'],
+      },
+      {
+        frontend: 'device-hub' as const,
+        command: ['open', 'devices:///manage/select?id=SIM%20123'],
+      },
+    ])('uses the project YAML preference for $frontend', async ({ frontend, command }) => {
+      await initFrontendConfig(frontend);
+
+      const commands: string[][] = [];
+      const result = await openSimulatorFrontend(
+        async (command) => {
+          commands.push(command);
+          return createMockCommandResponse({ success: true });
+        },
+        { simulatorId: 'SIM 123' },
+      );
+
+      expect(result).toEqual({ success: true, frontend });
+      expect(commands).toEqual([command]);
+    });
+
     it('reports both launch failures', async () => {
-      const result = await openSimulatorFrontend(async (command) =>
-        createMockCommandResponse({ success: false, error: `${command.at(-1)} not found` }),
+      const errors = ['DeviceHub not found', 'Simulator not found'];
+      let errorIndex = 0;
+      const result = await openSimulatorFrontend(async () =>
+        createMockCommandResponse({ success: false, error: errors[errorIndex++] }),
       );
 
       expect(result.success).toBe(false);
@@ -173,6 +253,24 @@ describe('focus-policy', () => {
         expect(result.error).toContain('Simulator.app: Simulator not found');
       }
     });
+
+    it.each([
+      { frontend: 'device-hub' as const, command: ['open', '-a', 'DeviceHub'] },
+      { frontend: 'simulator' as const, command: ['open', '-a', 'Simulator'] },
+    ])(
+      'does not fall back when $frontend is configured and unavailable',
+      async ({ frontend, command }) => {
+        await initFrontendConfig(frontend);
+        const commands: string[][] = [];
+        const result = await openSimulatorFrontend(async (command) => {
+          commands.push(command);
+          return createMockCommandResponse({ success: false, error: 'not found' });
+        });
+
+        expect(result.success).toBe(false);
+        expect(commands).toEqual([command]);
+      },
+    );
 
     it('skips both frontends in headless mode', async () => {
       process.env[ENV_VAR] = '1';

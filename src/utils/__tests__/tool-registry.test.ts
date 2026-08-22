@@ -106,6 +106,7 @@ function createPredicateContext(): PredicateContext {
       disableSessionDefaults: false,
       disableXcodeAutoSync: false,
       showTestTiming: false,
+      simulatorFrontend: 'auto',
       uiDebuggerGuardMode: 'error',
       incrementalBuildsEnabled: false,
       dapRequestTimeoutMs: 30_000,

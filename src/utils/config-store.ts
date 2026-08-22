@@ -8,7 +8,12 @@ import {
   type ProjectConfig,
 } from './project-config.ts';
 import type { DebuggerBackendKind } from './debugger/types.ts';
-import type { FilePathRenderStyle, UiDebuggerGuardMode } from './runtime-config-types.ts';
+import {
+  isSimulatorFrontendPreference,
+  type FilePathRenderStyle,
+  type SimulatorFrontendPreference,
+  type UiDebuggerGuardMode,
+} from './runtime-config-types.ts';
 import { isFilePathRenderStyle } from './file-path-render-style.ts';
 import { normalizeSessionDefaultsProfileName } from './session-defaults-profile.ts';
 
@@ -22,6 +27,7 @@ export type RuntimeConfigOverrides = Partial<{
   disableXcodeAutoSync: boolean;
   showTestTiming: boolean;
   filePathRenderStyle: FilePathRenderStyle;
+  simulatorFrontend: SimulatorFrontendPreference;
   uiDebuggerGuardMode: UiDebuggerGuardMode;
   incrementalBuildsEnabled: boolean;
   dapRequestTimeoutMs: number;
@@ -49,6 +55,7 @@ export type ResolvedRuntimeConfig = {
   disableXcodeAutoSync: boolean;
   showTestTiming: boolean;
   filePathRenderStyle?: FilePathRenderStyle;
+  simulatorFrontend: SimulatorFrontendPreference;
   uiDebuggerGuardMode: UiDebuggerGuardMode;
   incrementalBuildsEnabled: boolean;
   dapRequestTimeoutMs: number;
@@ -85,6 +92,7 @@ const DEFAULT_CONFIG: ResolvedRuntimeConfig = {
   disableSessionDefaults: false,
   disableXcodeAutoSync: false,
   showTestTiming: false,
+  simulatorFrontend: 'auto',
   uiDebuggerGuardMode: 'error',
   incrementalBuildsEnabled: false,
   dapRequestTimeoutMs: 30_000,
@@ -154,6 +162,18 @@ function parseFilePathRenderStyle(value: string | undefined): FilePathRenderStyl
   return undefined;
 }
 
+function parseSimulatorFrontend(
+  value: string | undefined,
+): SimulatorFrontendPreference | undefined {
+  if (!value) return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (isSimulatorFrontendPreference(normalized)) {
+    return normalized;
+  }
+  log('warn', `Ignoring unsupported simulator frontend '${value}'.`);
+  return undefined;
+}
+
 function parseDebuggerBackend(value: string | undefined): DebuggerBackendKind | undefined {
   if (!value) return undefined;
   const normalized = value.trim().toLowerCase();
@@ -216,6 +236,12 @@ function readEnvConfig(env: NodeJS.ProcessEnv): RuntimeConfigOverrides {
     config,
     'filePathRenderStyle',
     parseFilePathRenderStyle(env.XCODEBUILDMCP_FILE_PATH_RENDER_STYLE),
+  );
+
+  setIfDefined(
+    config,
+    'simulatorFrontend',
+    parseSimulatorFrontend(env.XCODEBUILDMCP_SIMULATOR_FRONTEND),
   );
 
   setIfDefined(
@@ -520,6 +546,13 @@ function resolveConfig(opts: {
       overrides: opts.overrides,
       fileConfig: opts.fileConfig,
       envConfig,
+    }),
+    simulatorFrontend: resolveFromLayers({
+      key: 'simulatorFrontend',
+      overrides: opts.overrides,
+      fileConfig: opts.fileConfig,
+      envConfig,
+      fallback: DEFAULT_CONFIG.simulatorFrontend,
     }),
     uiDebuggerGuardMode: resolveFromLayers({
       key: 'uiDebuggerGuardMode',
