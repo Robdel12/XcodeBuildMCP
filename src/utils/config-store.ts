@@ -28,6 +28,7 @@ export type RuntimeConfigOverrides = Partial<{
   showTestTiming: boolean;
   filePathRenderStyle: FilePathRenderStyle;
   simulatorFrontend: SimulatorFrontendPreference;
+  simulatorFrontendBackground: boolean;
   uiDebuggerGuardMode: UiDebuggerGuardMode;
   incrementalBuildsEnabled: boolean;
   dapRequestTimeoutMs: number;
@@ -56,6 +57,7 @@ export type ResolvedRuntimeConfig = {
   showTestTiming: boolean;
   filePathRenderStyle?: FilePathRenderStyle;
   simulatorFrontend: SimulatorFrontendPreference;
+  simulatorFrontendBackground: boolean;
   uiDebuggerGuardMode: UiDebuggerGuardMode;
   incrementalBuildsEnabled: boolean;
   dapRequestTimeoutMs: number;
@@ -93,6 +95,7 @@ const DEFAULT_CONFIG: ResolvedRuntimeConfig = {
   disableXcodeAutoSync: false,
   showTestTiming: false,
   simulatorFrontend: 'auto',
+  simulatorFrontendBackground: false,
   uiDebuggerGuardMode: 'error',
   incrementalBuildsEnabled: false,
   dapRequestTimeoutMs: 30_000,
@@ -242,6 +245,12 @@ function readEnvConfig(env: NodeJS.ProcessEnv): RuntimeConfigOverrides {
     config,
     'simulatorFrontend',
     parseSimulatorFrontend(env.XCODEBUILDMCP_SIMULATOR_FRONTEND),
+  );
+
+  setIfDefined(
+    config,
+    'simulatorFrontendBackground',
+    parseBoolean(env.XCODEBUILDMCP_SIMULATOR_FRONTEND_BACKGROUND),
   );
 
   setIfDefined(
@@ -553,6 +562,13 @@ function resolveConfig(opts: {
       fileConfig: opts.fileConfig,
       envConfig,
       fallback: DEFAULT_CONFIG.simulatorFrontend,
+    }),
+    simulatorFrontendBackground: resolveFromLayers({
+      key: 'simulatorFrontendBackground',
+      overrides: opts.overrides,
+      fileConfig: opts.fileConfig,
+      envConfig,
+      fallback: DEFAULT_CONFIG.simulatorFrontendBackground,
     }),
     uiDebuggerGuardMode: resolveFromLayers({
       key: 'uiDebuggerGuardMode',

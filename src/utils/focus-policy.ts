@@ -50,7 +50,11 @@ export function buildOpenSimulatorAppCommand(opts?: { simulatorId?: string }): s
   if (isHeadlessLaunchMode()) {
     return null;
   }
-  const command = ['open', '-a', 'Simulator'];
+  const command = ['open'];
+  if (getConfig().simulatorFrontendBackground) {
+    command.push('-g');
+  }
+  command.push('-a', 'Simulator');
   if (opts?.simulatorId) {
     command.push('--args', '-CurrentDeviceUDID', opts.simulatorId);
   }
@@ -78,9 +82,10 @@ export function buildOpenSimulatorFrontendCommands(opts?: {
   const encodedSimulatorId = opts?.simulatorId
     ? encodeURIComponent(opts.simulatorId).replace(/'/g, '%27')
     : undefined;
+  const openOptions = getConfig().simulatorFrontendBackground ? ['-g'] : [];
   const deviceHubCommand = encodedSimulatorId
-    ? ['open', `devices:///manage/select?id=${encodedSimulatorId}`]
-    : ['open', '-a', 'DeviceHub'];
+    ? ['open', ...openOptions, `devices:///manage/select?id=${encodedSimulatorId}`]
+    : ['open', ...openOptions, '-a', 'DeviceHub'];
   const simulatorCommand = buildOpenSimulatorAppCommand(opts);
 
   const candidates: SimulatorFrontendCommand[] = [

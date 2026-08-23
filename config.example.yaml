@@ -12,6 +12,7 @@ debug: false
 sentryDisabled: false
 filePathRenderStyle: 'list' # text output file artifacts: list or tree
 simulatorFrontend: 'simulator' # simulator, device-hub, or auto
+simulatorFrontendBackground: false # open the selected frontend without foreground focus
 sessionDefaults:
   projectPath: './MyApp.xcodeproj' # xor workspacePath
   workspacePath: './MyApp.xcworkspace' # xor projectPath

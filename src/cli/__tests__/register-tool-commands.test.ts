@@ -52,6 +52,7 @@ const baseRuntimeConfig: ResolvedRuntimeConfig = {
   disableXcodeAutoSync: false,
   showTestTiming: false,
   simulatorFrontend: 'auto',
+  simulatorFrontendBackground: false,
   uiDebuggerGuardMode: 'error',
   incrementalBuildsEnabled: false,
   dapRequestTimeoutMs: 30_000,

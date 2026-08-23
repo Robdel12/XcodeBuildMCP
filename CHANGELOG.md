@@ -5,6 +5,7 @@
 ### Added
 
 - Added the `simulatorFrontend` project setting for choosing `auto`, `simulator`, or `device-hub` when opening simulator frontends. Explicit choices are strict; the default `auto` mode preserves Device Hub fallback behavior. `XCODEBUILDMCP_SIMULATOR_FRONTEND` remains available when no project setting is present.
+- Added `simulatorFrontendBackground` and `XCODEBUILDMCP_SIMULATOR_FRONTEND_BACKGROUND` for opening the selected simulator frontend without bringing it to the foreground.
 
 ### Changed
 

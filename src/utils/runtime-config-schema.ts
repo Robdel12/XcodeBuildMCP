@@ -15,6 +15,7 @@ export const runtimeConfigFileSchema = z
     showTestTiming: z.boolean().optional(),
     filePathRenderStyle: z.enum(['tree', 'list']).optional(),
     simulatorFrontend: z.enum(SIMULATOR_FRONTEND_PREFERENCES).optional(),
+    simulatorFrontendBackground: z.boolean().optional(),
     uiDebuggerGuardMode: z.enum(['error', 'warn', 'off']).optional(),
     incrementalBuildsEnabled: z.boolean().optional(),
     dapRequestTimeoutMs: z.number().int().positive().optional(),

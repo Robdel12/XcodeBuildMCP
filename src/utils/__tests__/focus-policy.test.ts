@@ -135,6 +135,16 @@ describe('focus-policy', () => {
       process.env[ENV_VAR] = '1';
       expect(buildOpenSimulatorAppCommand()).toBeNull();
     });
+
+    it('adds -g when background mode is enabled', async () => {
+      await initConfigStore({
+        cwd: '/repo',
+        fs: createMockFileSystemExecutor({ existsSync: () => false }),
+        env: { XCODEBUILDMCP_SIMULATOR_FRONTEND_BACKGROUND: 'true' },
+      });
+
+      expect(buildOpenSimulatorAppCommand()).toEqual(['open', '-g', '-a', 'Simulator']);
+    });
   });
 
   describe('buildOpenSimulatorFrontendCommands', () => {

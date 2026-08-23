@@ -38,6 +38,7 @@ describe('config-store', () => {
     const config = getConfig();
     expect(config.debug).toBe(false);
     expect(config.simulatorFrontend).toBe('auto');
+    expect(config.simulatorFrontendBackground).toBe(false);
     expect(config.incrementalBuildsEnabled).toBe(false);
     expect(config.dapRequestTimeoutMs).toBe(30000);
     expect(config.dapLogEvents).toBe(false);
@@ -58,6 +59,7 @@ describe('config-store', () => {
       XCODEBUILDMCP_DEBUGGER_BACKEND: 'lldb',
       XCODEBUILDMCP_FILE_PATH_RENDER_STYLE: 'list',
       XCODEBUILDMCP_SIMULATOR_FRONTEND: '  SiMuLaToR ',
+      XCODEBUILDMCP_SIMULATOR_FRONTEND_BACKGROUND: 'true',
       XCODEBUILDMCP_AXE_SOURCE_PATH: '/Volumes/Developer/AXe',
     };
 
@@ -75,6 +77,7 @@ describe('config-store', () => {
     expect(config.debuggerBackend).toBe('lldb-cli');
     expect(config.filePathRenderStyle).toBe('list');
     expect(config.simulatorFrontend).toBe('simulator');
+    expect(config.simulatorFrontendBackground).toBe(true);
     expect(config.axeSourcePath).toBe('/Volumes/Developer/AXe');
   });
 
